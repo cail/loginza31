@@ -1,0 +1,32 @@
+{
+    "name": "cail/loginza31",
+    "type": "phpbb-extension",
+    "description": "Enables loginza authorization",
+    "version": "1.0.0",
+    "keywords": ["loginza", "phpbb", "extension", "auth", "provider", "oauth", "vk"],
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Igor Russkih",
+            "homepage": "https://github.com/cail",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "require-dev": {
+        "phpbb/epv": "dev-master"
+    },
+    "extra": {
+        "display-name": "Loginza authorization",
+        "soft-require": {
+           "phpbb/phpbb": "3.1.*"
+        },
+        "version-check": {
+            "host": "cail.github.io",
+            "directory": "/extensions",
+            "filename": "loginza31.json"
+        }
+    }
+}
