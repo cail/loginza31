@@ -5,10 +5,13 @@
 
 namespace cail\loginza31\controller;
 
-require_once '../libs/LoginzaAPI.class.php';
-require_once '../libs/LoginzaUserProfile.class.php';
+require_once 'LoginzaAPI.class.php';
+require_once 'LoginzaUserProfile.class.php';
 
 define('LOGINZA_REGISTER_DEFAULT_LOGIN_PREFIX', 'loginza');
+
+use \LoginzaAPI;
+use \LoginzaUserProfile;
 
 class controller
 {
@@ -70,7 +73,8 @@ class controller
 		$LoginzaAPI = new LoginzaAPI();
 		
 		// запрос профил€ авторизованного пользовател€
-		$profile = $LoginzaAPI->getAuthInfo($_POST['token']);
+		
+		$profile = $LoginzaAPI->getAuthInfo($request->variable('token', '', true, \phpbb\request\request_interface::POST));
 		
 		// проверка на ошибки
 		if (is_object($profile) && empty($profile->error_type)) {
