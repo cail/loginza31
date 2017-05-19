@@ -6,6 +6,7 @@ namespace cail\loginza31\event;
 * Event listener
 */
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class page_header_after implements EventSubscriberInterface
 {
@@ -55,10 +56,10 @@ class page_header_after implements EventSubscriberInterface
 		// Output board announcement to the template
 		$this->template->assign_vars(array(
 			'S_LOGINZA'			=> true,
-			'LOGINZA_RETURN_URL'	=> urlencode( append_sid(generate_board_url() . 
-				$this->controller_helper->route('cail_loginza31_controller', array(
-				'hash' => generate_link_hash('auth')))
-			)),
+			'LOGINZA_RETURN_URL'	=> urlencode( generate_board_url(true) . 
+				$this->controller_helper->route('cail_loginza31_controller',
+					array('hash' => generate_link_hash('auth')), true, true)
+			),
 			'xLOGINZA_RETURN_URL'  => urlencode( append_sid(generate_board_url() . "/ucp.$phpEx", 'mode=register')),
 		));
 	}
