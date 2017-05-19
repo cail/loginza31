@@ -1,0 +1,19 @@
+services:
+    cail.loginza31.page_header_after:
+        class: cail\loginza31\event\page_header_after
+        arguments:
+            - '@config'
+            - '@template'
+            - '@user'
+            - '@controller.helper'
+        tags:
+            - { name: event.listener }
+
+    cail.loginza31.controller:
+        class: cail\loginza31\controller\controller
+        arguments:
+            - '@config'
+            - '@config_text'
+            - '@dbal.conn'
+            - '@request'
+            - '@user'

@@ -31,7 +31,7 @@ class m1_initial extends \phpbb\db\migration\migration
 			),
 			'add_index' => array(
 				$this->table_prefix . 'users'	=> array(
-					'loginza_identity',
+					'lii' => array('loginza_identity'),
 				),	
 			),	
 		);

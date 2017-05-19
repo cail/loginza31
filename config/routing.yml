@@ -1,0 +1,3 @@
+cail_loginza31_controller:
+    path: /loginza/auth
+    defaults: { _controller: cail.loginza31.controller:auth }
