@@ -17,3 +17,5 @@ services:
             - '@dbal.conn'
             - '@request'
             - '@user'
+            - '%core.root_path%'
+            - '%core.php_ext%'

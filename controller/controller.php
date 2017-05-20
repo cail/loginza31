@@ -13,6 +13,7 @@ define('LOGINZA_REGISTER_DEFAULT_LOGIN_PREFIX', 'loginza');
 use \LoginzaAPI;
 use \LoginzaUserProfile;
 
+
 class controller
 {
 	/** @var \phpbb\config\config */
@@ -30,6 +31,10 @@ class controller
 	/** @var \phpbb\user */
 	protected $user;
 
+	protected $phpbb_root_path;
+
+	protected $php_ext;
+
 	/**
 	* Constructor
 	*
@@ -44,13 +49,24 @@ class controller
 								\phpbb\config\db_text $config_text,
 								\phpbb\db\driver\driver_interface $db,
 								\phpbb\request\request $request,
-								\phpbb\user $user)
+								\phpbb\user $user,
+								$phpbb_root_path,
+								$php_ext
+								)
 	{
 		$this->config = $config;
 		$this->config_text = $config_text;
 		$this->db = $db;
 		$this->request = $request;
 		$this->user = $user;
+		$this->phpbb_root_path = $phpbb_root_path;
+		$this->php_ext = $php_ext;
+
+		if (!function_exists('validate_data'))
+		{
+			require($this->phpbb_root_path . 'includes/functions_user.' . $this->php_ext);
+		}
+
 	}
 
 	/**
@@ -62,8 +78,11 @@ class controller
 	public function auth()
 	{
 		//
-		global $config, $db, $user, $auth, $template, $phpbb_root_path, $phpEx;
+		global $db, $auth, $template, $phpbb_root_path, $phpEx;
 		
+		$user = $this->user;
+		$config = $this->config;
+
 		// если регистраци отключена
 		if ($config['require_activation'] == USER_ACTIVATION_DISABLE)
 		{
@@ -73,9 +92,15 @@ class controller
 		$LoginzaAPI = new LoginzaAPI();
 		
 		// запрос профил€ авторизованного пользовател€
-		
-		$profile = $LoginzaAPI->getAuthInfo($request->variable('token', '', true, \phpbb\request\request_interface::POST));
-		
+		$token = $this->request->variable('token', '', true, \phpbb\request\request_interface::POST);
+
+		print("TOKEN:".$token."\n");
+
+		$profile = $LoginzaAPI->getAuthInfo($token);
+
+		print("PROFILE:\n");
+		var_dump($profile);
+
 		// проверка на ошибки
 		if (is_object($profile) && empty($profile->error_type)) {
 			// поиск пользовател€ в Ѕƒ
@@ -83,6 +108,9 @@ class controller
 				$user_id = $this->regUser($profile);
 			}
 			
+		} else {
+			print("BAD PROFILE:\n");
+			trigger_error("NO USER. profile");			
 		}
 
 		// авторизаци€ юзера
@@ -144,7 +172,10 @@ class controller
 	 * @return unknown
 	 */
 	function regUser ($profile) {
-		global $config, $db, $user, $auth, $template, $phpbb_root_path, $phpEx;
+		global $config, $db, $user, $auth, $template;
+
+		$phpbb_root_path = $this->phpbb_root_path;
+		$phpEx = $this->php_ext;
 		
 		// объект генерации полей профил€
 		$LoginzaProfile = new LoginzaUserProfile($profile);
@@ -173,13 +204,13 @@ class controller
 			'user_password'			=> phpbb_hash($gen_password),
 			'user_email'			=> strtolower($profile->email),
 			'user_birthday'			=> date('d-m-Y', strtotime($profile->dob)),
+
 			'user_avatar' 			=> (string)$profile->photo,
-			'user_from' 			=> (string)$profile->address->home->city,
-			'user_icq' 				=> (string)$profile->im->icq,
-			'user_jabber' 			=> (string)$profile->im->jabber,
-			'user_website' 			=> (string)$LoginzaProfile->genUserSite(),
+			'user_avatar_type' 		=> 2,
+			'user_avatar_width' 	=> 100,
+			'user_avatar_height' 	=> 100,			
+			
 			'user_timezone'			=> (float) $timezone,
-			'user_dst'				=> $is_dst,
 			'user_lang'				=> basename($user->lang_name),
 			'user_type'				=> USER_NORMAL,
 			'user_actkey'			=> '',
@@ -187,10 +218,20 @@ class controller
 			'user_regdate'			=> time(),
 			'user_inactive_reason'	=> 0,
 			'user_inactive_time'	=> 0,
+#			'user_dst'				=> $is_dst,
 			'loginza_identity' 		=> $profile->identity,
 			'loginza_provider'		=> $profile->provider
 		);
 		
+		$cpdata = array(
+			'pf_phpbb_location' 		=> (string)$profile->address->home->city,
+			'pf_phpbb_icq' 			=> (string)$profile->im->icq,
+#			'pf_phpbb_jabber' 			=> (string)$profile->im->jabber,
+			'pf_phpbb_website' 		=> (string)$LoginzaProfile->genUserSite(),
+			'pf_realname'		=> 'xx',
+			'pf_phone'			=> '34',//(string)$profile->phone,
+		);
+
 		$error = array();
 		
 		// валидаци€ полей
@@ -200,6 +241,10 @@ class controller
 				array('username', ''))
 		));
 		
+		print "USERNAME ERR: \n";
+		var_dump($username_errors);
+		var_dump($data);
+
 		// логин зан€т или не удовлетвор€ет настройкам phpBB
 		if (count($username_errors)) {
 			// генерируем уникальный логин
@@ -211,7 +256,7 @@ class controller
 			$row = $db->sql_fetchrow($result);
 			$db->sql_freeresult($result);
 			
-			$data['username'] = LOGINZA_REGISTER_DEFAULT_LOGIN_PREFIX.$row['count'];
+			$data['username'] = $data['username'].$row['count'];
 		}
 		
 		$error = array();
@@ -251,7 +296,7 @@ class controller
 			}
 			
 			// регистраци€ нового польщовател€
-			$user_id = user_add($data);
+			$user_id = user_add($data, $cpdata);
 			
 			// This should not happen, because the required variables are listed above...
 			if ($user_id === false) {
@@ -264,23 +309,29 @@ class controller
 			if ($config['email_enable']) {
 				include_once($phpbb_root_path . 'includes/functions_messenger.' . $phpEx);
 
-				$messenger = new messenger(false);
+				$messenger = new \messenger(false);
 
 				$messenger->template($email_template, $data['lang']);
 
 				$messenger->to($data['email'], $data['username']);
 
-				$messenger->headers('X-AntiAbuse: Board servername - ' . $config['server_name']);
-				$messenger->headers('X-AntiAbuse: User_id - ' . $user->data['user_id']);
-				$messenger->headers('X-AntiAbuse: Username - ' . $user->data['username']);
-				$messenger->headers('X-AntiAbuse: User IP - ' . $user->ip);
+				$messenger->anti_abuse_headers($config, $user);
 
 				$messenger->assign_vars(array(
 					'WELCOME_MSG'	=> htmlspecialchars_decode(sprintf($user->lang['WELCOME_SUBJECT'], $config['sitename'])),
 					'USERNAME'		=> htmlspecialchars_decode($data['username']),
-					'PASSWORD'		=> htmlspecialchars_decode($gen_password)
-					)
+					'PASSWORD'		=> htmlspecialchars_decode($data['new_password']),
+					'U_ACTIVATE'	=> "$server_url/ucp.$phpEx?mode=activate&u=$user_id&k=$user_actkey")
 				);
+
+				if ($coppa)
+				{
+					$messenger->assign_vars(array(
+						'FAX_INFO'		=> $config['coppa_fax'],
+						'MAIL_INFO'		=> $config['coppa_mail'],
+						'EMAIL_ADDRESS'	=> $data['email'])
+					);
+				}
 
 				$messenger->send(NOTIFY_EMAIL);
 			}

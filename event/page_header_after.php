@@ -58,7 +58,7 @@ class page_header_after implements EventSubscriberInterface
 			'S_LOGINZA'			=> true,
 			'LOGINZA_RETURN_URL'	=> urlencode( generate_board_url(true) . 
 				$this->controller_helper->route('cail_loginza31_controller',
-					array('hash' => generate_link_hash('auth')), false, true)
+					array('hash' => generate_link_hash('auth')), true, true)
 			),
 			'xLOGINZA_RETURN_URL'  => urlencode( append_sid(generate_board_url() . "/ucp.$phpEx", 'mode=register')),
 		));
